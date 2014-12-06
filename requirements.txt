@@ -1,4 +1,0 @@
-decorator==3.4.0
-gnureadline==6.3.3
-ipython==2.3.0
-networkx==1.9.1
