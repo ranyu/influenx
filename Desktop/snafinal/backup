@@ -1,0 +1,99 @@
+import os
+import collections
+from read_test_set import read_test_set
+
+from igraph import Graph
+
+def deal_with_punc(sentence,punc):
+	split = sentence.strip().split(punc)
+	split_name = ''
+	#print split
+	for s in xrange(len(split)-1):
+		split_name += split[s]+'_'
+	return split_name,split[-1]
+
+def get_filename(rootDir): 
+    document_dir = []
+    for lists in os.listdir(rootDir): 
+        path = os.path.join(rootDir, lists) 
+        document_dir.append(lists)
+        if os.path.isdir(path): 
+            get_filename(path)
+    return document_dir
+def loadFeatures(filename):
+    featureMap = collections.defaultdict(dict)
+    for line in open(filename):
+        parts = line.strip().split()
+        currentPerson = parts[0]
+        for part in parts[1:]:
+            key = part[0:part.rfind(';')]
+            value = part[part.rfind(';')+1:]
+            featureMap[currentPerson][key] = value
+    #print featureMap['27519']
+    return featureMap
+def input_graph_data(featureMap,filename):
+	g = Graph(directed = False)
+	with open('egonets/'+filename,'r') as f:
+		for data in f:
+			node = data.strip().split(':')[0]
+			if node not in g.vs:
+				g.add_vertex(node,features=featureMap[node])
+				for i in xrange(1,len(data.strip().split())):
+					other_node =  data.strip().split()[i]
+					if other_node not in g.vs:
+						g.add_vertex(other_node,features=featureMap[other_node])
+						g.add_edge(node,other_node)
+		return g.simplify()
+						#edges.append((node,other_node))
+			#quit()
+def extract_clusters(clusters, reverseIdMap):
+    new_clusters = []
+    for i in range(len(clusters)):
+        next_cluster = [reverseIdMap[j] for j in clusters[i]]
+        new_clusters.append(next_cluster)
+    return new_clusters
+def write_submission(node,cl):
+	with open(node+'.circles','w') as f:
+		for i in cl:
+			f.write('circle:')
+			for j in i:
+				f.write(str(j)+' ')
+			f.write('\n')
+def main():	
+	#edges = []
+	test_set = read_test_set()
+	quit()
+	featureMap = loadFeatures('features.txt')
+	document_dir = get_filename('egonets')
+	reverseIdMap = {}
+	idMap = {}
+	currentId = 0
+	for d in document_dir:
+		print d.split('.')[0]
+		g = input_graph_data(featureMap,d)
+		for friend in g.vs['name']:
+			print friend
+			idMap[friend] = currentId
+			reverseIdMap[currentId] = friend
+			currentId += 1
+		print '@@@',reverseIdMap
+        print reverseIdMap
+        #community_edge_betweenness
+        dendogram = g.community_walktrap(steps=4)
+        cl = dendogram.as_clustering()
+        print 'GG',g
+        print 'TT',list(cl)
+        infomap_clusters = extract_clusters(cl, reverseIdMap)
+        print '!!!',infomap_clusters
+        #quit()
+		#write_submission(d.split('.')[0],list(infomap_clusters))
+        #dendogram = g.community_edge_betweenness(False)
+		#print dendogram
+		#community_walk_trap
+		#quit()
+		#print g,edges
+	#g.add_edges(edges)
+	#print g
+	
+if __name__ == '__main__':
+	main()
